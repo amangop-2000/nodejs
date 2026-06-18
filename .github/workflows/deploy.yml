@@ -1,0 +1,32 @@
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to ECR"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 864241680365.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Pull Latest Image
+        run: |
+          docker pull 864241680365.dkr.ecr.us-east-1.amazonaws.com/nodejs-demo:latest
+
+      - name: Stop Existing Container
+        run: |
+          docker stop nodejs || true
+          docker rm nodejs || true
+
+      - name: Start New Container
+        run: |
+          docker run -d \
+          --name nodejs \
+          -p 5006:5006 \
+          864241680365.dkr.ecr.us-east-1.amazonaws.com/nodejs-demo:latest
